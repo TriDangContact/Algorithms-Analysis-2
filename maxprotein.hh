@@ -307,27 +307,26 @@ std::unique_ptr<FoodVector> exhaustive_max_protein(const FoodVector& foods,
 	const int n = foods.size();
 	assert(n < 64);
 	//best = None
-	std::unique_ptr<FoodVector> best(nullptr);
-	uint64_t max_size = ((2 ^ n) - 1);
+	std::unique_ptr<FoodVector> best(new FoodVector);
+	int max_size = pow(2,n) - 1;
 
 	//for bits from 0 to max_size
-	for (uint64_t bits = 0; bits < max_size; bits++) {
+	for (int bits = 0; bits <= max_size; bits++) {
 		//candidate = empty vector
-		FoodVector candidate;
+		std::unique_ptr<FoodVector> candidate(new FoodVector);
 		//for j from 0 to n-1
-		for (int j = 0; j = n - 1; j++) {
+		for (int j = 0; j <= n - 1; j++) {
 			if (((bits >> j) & 1) == 1) {
-				candidate.push_back(foods[j]);
+				candidate->push_back(foods[j]);
 			}
 		}
 		//getting total protein value
 		int total_calories, total_protein, total_calories_best, total_protein_best;
-		sum_food_vector(total_calories, total_protein, candidate);
+		sum_food_vector(total_calories, total_protein, *candidate);
 		sum_food_vector(total_calories_best, total_protein_best, *best);
 		if (total_calories <= total_kcal) {
-			if ((best == nullptr) || (total_protein > total_protein_best)) {
-				//best = candidate
-				std::unique_ptr<FoodVector> best(&candidate);
+			if ((best == NULL) || (total_protein > total_protein_best)) {
+				*best = *candidate;
 			}
 		}
 	}
