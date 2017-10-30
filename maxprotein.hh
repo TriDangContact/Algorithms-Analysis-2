@@ -188,11 +188,57 @@ void print_food_vector(const FoodVector& foods) {
 // addition, the the vector includes only the first total_size foods
 // that match these criteria.
 std::unique_ptr<FoodVector> filter_food_vector(const FoodVector& source,
-					       int min_kcal,
-					       int max_kcal,
-					       int total_size) {
-  // TODO: implement this function, then delete this comment
-  return nullptr;
+	int min_kcal,
+	int max_kcal,
+	int total_size) {
+	std::unique_ptr<FoodVector> FV(new FoodVector);		//create new empty FoodVector
+	int current_size = 0;
+	//include only the first total_size foods
+	while (current_size < total_size) {
+		int temp = source[current_size]->kcal();
+		//if the current Food object matches the criteria
+		if ((temp >= min_kcal) && (temp <= max_kcal)) {
+			std::string temp_desc = source[current_size]->description();
+			std::string temp_amount = source[current_size]->amount();
+			int temp_amount_g = source[current_size]->amount_g();
+			int temp_kcal = source[current_size]->kcal();
+			int temp_protein_g = source[current_size]->protein_g();
+			//add it to FV
+			FV->push_back(std::shared_ptr<Food>(new Food(temp_desc,
+				temp_amount, temp_amount_g, temp_kcal, temp_protein_g)));
+		}
+		current_size++;
+	}
+	return FV;
+}
+
+//quickSort implementation used in greedy algorithm
+void quickSort(FoodVector& vector, int left, int right) {
+	int i = left, j = right;
+	std::shared_ptr<Food> temp;
+	int mid = (left + right) / 2;
+	std::shared_ptr<Food> pivot = vector[mid];
+	while (i <= j) {
+		while (vector[i]->protein_g() < pivot->protein_g()) {
+			i++;
+		}
+		while (vector[j]->protein_g() > pivot->protein_g()) {
+			j--;
+		}
+		if (i <= j) {
+			temp = vector[i];
+			vector[i] = vector[j];
+			vector[j] = temp;
+			i++;
+			j--;
+		}
+	}
+	if (left < j) {
+		quickSort(vector, left, j);
+	}
+	if (i < right) {
+		quickSort(vector, i, right);
+	}
 }
 
 // Compute the optimal set of foods with a greedy
@@ -201,9 +247,54 @@ std::unique_ptr<FoodVector> filter_food_vector(const FoodVector& source,
 // greatest. Repeat until no more foods can be chosen, either because
 // we've run out of foods, or run out of calories.
 std::unique_ptr<FoodVector> greedy_max_protein(const FoodVector& foods,
-					       int total_kcal) {
-  // TODO: implement this function, then delete this comment
-  return nullptr;
+	int total_kcal) {
+	//todo = foods
+	FoodVector todo;
+	int i = 0;
+	while (foods[i] != nullptr) {
+		std::string temp_desc = foods[i]->description();
+		std::string temp_amount = foods[i]->amount();
+		int temp_amount_g = foods[i]->amount_g();
+		int temp_kcal = foods[i]->kcal();
+		int temp_protein_g = foods[i]->protein_g();
+		todo.push_back(std::shared_ptr<Food>(new Food(temp_desc,
+			temp_amount,
+			temp_amount_g,
+			temp_kcal,
+			temp_protein_g)));
+		i++;
+	}
+
+	//result = empty vector
+	std::unique_ptr<FoodVector> result(new FoodVector);
+	int result_cal = 0;
+	int j = 0;
+
+	//sort todo by protein_g
+	quickSort(todo, 0, todo.size() - 1);
+
+	//while todo is not empty
+	while (!todo.empty()) {
+		//find the food f in todo of maximum protein
+		int max_k = todo.size() - 1;
+		std::shared_ptr<Food> f(new Food(todo[max_k]->description(),
+			todo[max_k]->amount(),
+			todo[max_k]->amount_g(),
+			todo[max_k]->kcal(),
+			todo[max_k]->protein_g()));
+
+		//remove f from todo
+		todo.pop_back();
+
+		//let c be f's calories
+		int c = f->kcal();
+		if ((result_cal + c) <= total_kcal) {
+			result->push_back(f);
+			result_cal += c;
+		}
+		j++;
+	}
+	return result;
 }
 
 // Compute the optimal set of foods with an exhaustive search
@@ -212,9 +303,33 @@ std::unique_ptr<FoodVector> greedy_max_protein(const FoodVector& foods,
 // total protein is greatest. To avoid overflow, the size of the foods
 // vector must be less than 64.
 std::unique_ptr<FoodVector> exhaustive_max_protein(const FoodVector& foods,
-						   int total_kcal) {
-  const int n = foods.size();
-  assert(n < 64);
-  // TODO: implement this function, then delete this comment
-  return nullptr;
+	int total_kcal) {
+	const int n = foods.size();
+	assert(n < 64);
+	//best = None
+	std::unique_ptr<FoodVector> best(nullptr);
+	uint64_t max_size = ((2 ^ n) - 1);
+
+	//for bits from 0 to max_size
+	for (uint64_t bits = 0; bits < max_size; bits++) {
+		//candidate = empty vector
+		FoodVector candidate;
+		//for j from 0 to n-1
+		for (int j = 0; j = n - 1; j++) {
+			if (((bits >> j) & 1) == 1) {
+				candidate.push_back(foods[j]);
+			}
+		}
+		//getting total protein value
+		int total_calories, total_protein, total_calories_best, total_protein_best;
+		sum_food_vector(total_calories, total_protein, candidate);
+		sum_food_vector(total_calories_best, total_protein_best, *best);
+		if (total_calories <= total_kcal) {
+			if ((best == nullptr) || (total_protein > total_protein_best)) {
+				//best = candidate
+				std::unique_ptr<FoodVector> best(&candidate);
+			}
+		}
+	}
+	return best;
 }
